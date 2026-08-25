@@ -1155,7 +1155,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         const addBtn = el("div", { class: "add-photo-btn", "data-sec": idx, "data-action": "add-photo" }, [document.createTextNode("📷  Add Photo")]);
         pb.appendChild(addBtn);
         const fileInput = el("input", {
-          type: "file", accept: "image/*", capture: "environment", multiple: "multiple",
+          type: "file", accept: "image/*", multiple: "multiple",
           id: "file_" + idx, style: "display:none"
         });
         pb.appendChild(fileInput);
@@ -1215,6 +1215,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   }
 
   function drawSignatureFromDataUrl(dataUrl) {
+    // This just paints a preview of an already-saved signature (loaded while editing an
+    // existing submission) onto the pad. It is NOT new ink, so sigHasInk stays as-is:
+    // if the inspector draws on top of it, the normal move() handler will flip it to true.
     const canvas = $("#sig-pad");
     const ctx = canvas.getContext("2d");
     const img = new Image();
@@ -1222,7 +1225,6 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       const ratio = window.devicePixelRatio || 1;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, canvas.width / ratio, canvas.height / ratio);
-      sigHasInk = true;
     };
     img.src = dataUrl;
   }
@@ -1372,22 +1374,34 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   }
 
   // ---------- Supabase: submit new / save edits, load an existing record for editing ----------
+  function withTimeout(promise, ms, label) {
+    let timer;
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error((label || "Request") + " timed out")), ms);
+    });
+    return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+  }
+
   function uploadDataUrlToStorage(dataUrl, path) {
     if (!dataUrl || dataUrl.indexOf("data:") !== 0) return Promise.resolve(dataUrl); // already a URL, nothing to upload
-    return fetch(dataUrl)
-      .then((r) => r.blob())
-      .then((blob) => {
-        const ext = (blob.type && blob.type.split("/")[1]) || "jpg";
-        return sb.storage.from("inspection-photos").upload(path + "." + ext, blob, {
-          upsert: true,
-          contentType: blob.type || "image/jpeg"
-        });
-      })
-      .then(({ data, error }) => {
-        if (error) throw error;
-        const { data: pub } = sb.storage.from("inspection-photos").getPublicUrl(data.path);
-        return pub.publicUrl;
-      });
+    return withTimeout(
+      fetch(dataUrl)
+        .then((r) => r.blob())
+        .then((blob) => {
+          const ext = (blob.type && blob.type.split("/")[1]) || "jpg";
+          return sb.storage.from("inspection-photos").upload(path + "." + ext, blob, {
+            upsert: true,
+            contentType: blob.type || "image/jpeg"
+          });
+        })
+        .then(({ data, error }) => {
+          if (error) throw error;
+          const { data: pub } = sb.storage.from("inspection-photos").getPublicUrl(data.path);
+          return pub.publicUrl;
+        }),
+      20000,
+      "Photo upload"
+    );
   }
 
   function buildDataPayload() {
@@ -1427,7 +1441,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       uploads.push(uploadDataUrlToStorage(state.signature.dataUrl, path).then((url) => { state.signature.dataUrl = url; }));
     }
 
-    Promise.all(uploads)
+    withTimeout(Promise.all(uploads), 30000, "Photo upload")
       .then(() => {
         const row = {
           draw_type: FORM_DEF.fileSlug,
@@ -1439,10 +1453,10 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           status: "submitted",
           data: buildDataPayload()
         };
-        if (state.recordId) {
-          return sb.from("inspections").update(row).eq("id", state.recordId).select().single();
-        }
-        return sb.from("inspections").insert(row).select().single();
+        const req = state.recordId
+          ? sb.from("inspections").update(row).eq("id", state.recordId).select().single()
+          : sb.from("inspections").insert(row).select().single();
+        return withTimeout(req, 20000, "Save");
       })
       .then(({ data, error }) => {
         if (error) throw error;
@@ -1461,7 +1475,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 
   function loadForEdit(id) {
     toast("Loading inspection…", 60000);
-    sb.from("inspections").select("*").eq("id", id).single().then(({ data, error }) => {
+    withTimeout(sb.from("inspections").select("*").eq("id", id).single(), 20000, "Load").then(({ data, error }) => {
       if (error || !data) {
         toast("Could not load that inspection. The link may be wrong.", 6000);
         return;
@@ -1485,12 +1499,16 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   }
 
   function urlToDataUrl(url) {
-    return fetch(url).then((r) => r.blob()).then((blob) => new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    }));
+    return withTimeout(
+      fetch(url).then((r) => r.blob()).then((blob) => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      })),
+      20000,
+      "Photo download"
+    );
   }
 
   function ensurePhotoDataUrls() {
