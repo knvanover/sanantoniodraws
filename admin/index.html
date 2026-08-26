@@ -45,6 +45,10 @@ textarea:disabled{background:#eee; color:#999;}
 .status-opt{display:flex; align-items:center; gap:8px; padding:6px 2px;}
 .status-opt input[type=radio]{width:19px; height:19px; accent-color:var(--green);}
 .status-opt label{font-size:14.5px;}
+.checklist-block{background:#f7f8f7; border:1px solid var(--line); border-radius:8px; padding:6px 10px; margin-bottom:10px;}
+.checklist-item{display:flex; align-items:center; gap:8px; padding:5px 2px;}
+.checklist-item input[type=checkbox]{width:18px; height:18px; accent-color:var(--green);}
+.checklist-item label{font-size:14px;}
 .notes-block{margin-bottom:10px;}
 .notes-block .sub{font-size:11px; color:var(--dkgray); font-style:italic; display:block; margin-bottom:4px;}
 .photos-block{margin-top:8px;}
@@ -143,11 +147,21 @@ table.admin-table a:hover { text-decoration:underline; }
   <div class="card">
     <div class="admin-toolbar">
       <input type="text" id="search" placeholder="Search by address, contractor, or homeowner&hellip;">
+      <select id="dept-filter">
+        <option value="">All departments</option>
+        <option value="NHD">Neighborhood &amp; Housing Development</option>
+        <option value="SSR">Small Scale Rehab</option>
+      </select>
       <select id="draw-filter">
         <option value="">All draw types</option>
-        <option value="Draw1">Draw 1</option>
-        <option value="Draw2">Draw 2</option>
-        <option value="Draw3_Final">Draw 3 (Final)</option>
+        <option value="Draw1">NHD &ndash; Draw 1</option>
+        <option value="Draw2">NHD &ndash; Draw 2</option>
+        <option value="Draw3_Final">NHD &ndash; Draw 3 (Final)</option>
+        <option value="SSR_Draw1">SSR &ndash; Draw 1</option>
+        <option value="SSR_Draw2">SSR &ndash; Draw 2</option>
+        <option value="SSR_Draw3">SSR &ndash; Draw 3</option>
+        <option value="SSR_Draw4">SSR &ndash; Draw 4</option>
+        <option value="SSR_Draw5">SSR &ndash; Draw 5 (Final)</option>
       </select>
       <button type="button" class="btn-secondary" id="refresh-btn" style="padding:8px 14px;">Refresh</button>
     </div>
@@ -159,8 +173,15 @@ table.admin-table a:hover { text-decoration:underline; }
 <script>
 const SUPABASE_URL = "https://rhtqxcznvoitxovibjso.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJodHF4Y3pudm9pdHhvdmlianNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2NzgyMjIsImV4cCI6MjEwMzI1NDIyMn0.MpBgeYbISB3Sc7UaUqVU8AzawrP16C8oNJl2TtaOz7o";
-const DRAW_FOLDERS = { "Draw1": "draw1", "Draw2": "draw2", "Draw3_Final": "draw3" };
-const DRAW_LABELS = { "Draw1": "Draw 1", "Draw2": "Draw 2", "Draw3_Final": "Draw 3 (Final)" };
+const DRAW_FOLDERS = {
+  "Draw1": "draw1", "Draw2": "draw2", "Draw3_Final": "draw3",
+  "SSR_Draw1": "ssr1", "SSR_Draw2": "ssr2", "SSR_Draw3": "ssr3", "SSR_Draw4": "ssr4", "SSR_Draw5": "ssr5"
+};
+const DRAW_LABELS = {
+  "Draw1": "Draw 1", "Draw2": "Draw 2", "Draw3_Final": "Draw 3 (Final)",
+  "SSR_Draw1": "Draw 1", "SSR_Draw2": "Draw 2", "SSR_Draw3": "Draw 3", "SSR_Draw4": "Draw 4", "SSR_Draw5": "Draw 5 (Final)"
+};
+const DEPT_LABELS = { "NHD": "Neighborhood & Housing Development", "SSR": "Small Scale Rehab" };
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
@@ -187,7 +208,10 @@ const DRAW_LABELS = { "Draw1": "Draw 1", "Draw2": "Draw 2", "Draw3_Final": "Draw
   function render() {
     const q = (document.getElementById("search").value || "").toLowerCase();
     const drawFilter = document.getElementById("draw-filter").value;
+    const deptFilter = document.getElementById("dept-filter").value;
     const rows = allRows.filter((r) => {
+      const dept = r.department || "NHD"; // rows saved before the department column existed default to NHD
+      if (deptFilter && dept !== deptFilter) return false;
       if (drawFilter && r.draw_type !== drawFilter) return false;
       if (!q) return true;
       const hay = [r.address, r.contractor, r.homeowner, r.oid].join(" ").toLowerCase();
@@ -199,13 +223,15 @@ const DRAW_LABELS = { "Draw1": "Draw 1", "Draw2": "Draw 2", "Draw3_Final": "Draw
       return;
     }
     let html = '<table class="admin-table"><thead><tr>' +
-      '<th>Address</th><th>Draw</th><th>Contractor</th><th>Homeowner</th><th>Status</th><th>Last Updated</th>' +
+      '<th>Address</th><th>Department</th><th>Draw</th><th>Contractor</th><th>Homeowner</th><th>Status</th><th>Last Updated</th>' +
       '</tr></thead><tbody>';
     rows.forEach((r) => {
+      const dept = r.department || "NHD";
       const folder = DRAW_FOLDERS[r.draw_type] || "draw1";
       const label = DRAW_LABELS[r.draw_type] || r.draw_type;
       html += '<tr>' +
         '<td><a href="/' + folder + '/?id=' + r.id + '">' + (r.address || "(no address entered)") + '</a></td>' +
+        '<td>' + (DEPT_LABELS[dept] || dept) + '</td>' +
         '<td>' + label + '</td>' +
         '<td>' + (r.contractor || "&mdash;") + '</td>' +
         '<td>' + (r.homeowner || "&mdash;") + '</td>' +
@@ -232,6 +258,7 @@ const DRAW_LABELS = { "Draw1": "Draw 1", "Draw2": "Draw 2", "Draw3_Final": "Draw
 
   document.getElementById("search").addEventListener("input", render);
   document.getElementById("draw-filter").addEventListener("change", render);
+  document.getElementById("dept-filter").addEventListener("change", render);
   document.getElementById("refresh-btn").addEventListener("click", load);
   load();
 })();
