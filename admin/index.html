@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Inspections - GreenWorks</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Submitted Inspections - GreenWorks</title>
 <style>
+
 
 :root{
   --green:#256834; --dkgreen:#1b4d26; --ltgreen:#eaf3ec;
@@ -115,21 +116,7 @@ canvas.sig-pad{width:100%; height:140px; display:block; touch-action:none;}
 .scope-summary-card li{margin-bottom:3px;}
 
 
-.admin-toolbar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px; }
-.admin-toolbar input, .admin-toolbar select { padding:8px 10px; border:1px solid var(--line); border-radius:6px; font-size:14px; }
-.admin-toolbar input[type=text] { flex:1; min-width:180px; }
-table.admin-table { width:100%; border-collapse:collapse; background:#fff; }
-table.admin-table th, table.admin-table td { text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); font-size:14px; }
-table.admin-table th { background:#f4f5f4; font-weight:600; color:var(--dkgray); }
-table.admin-table tr:hover td { background:#f8faf8; }
-table.admin-table a { color:var(--green); font-weight:600; text-decoration:none; }
-table.admin-table a:hover { text-decoration:underline; }
-.badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:12px; font-weight:600; }
-.badge.submitted { background:#fff2cc; color:#8a6d00; }
-.badge.finalized { background:#dcefe0; color:#1c5e2e; }
-.new-links { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px; }
-.new-links a { background:var(--green); color:#fff; padding:9px 16px; border-radius:6px; text-decoration:none; font-weight:600; font-size:14px; }
-.empty-state { padding:30px; text-align:center; color:var(--dkgray); }
+
 </style>
 </head>
 <body>
@@ -157,11 +144,13 @@ table.admin-table a:hover { text-decoration:underline; }
         <option value="Draw1">NHD &ndash; Draw 1</option>
         <option value="Draw2">NHD &ndash; Draw 2</option>
         <option value="Draw3_Final">NHD &ndash; Draw 3 (Final)</option>
+        <option value="ChangeOrder_NHD">NHD &ndash; Change Order</option>
         <option value="SSR_Draw1">SSR &ndash; Draw 1</option>
         <option value="SSR_Draw2">SSR &ndash; Draw 2</option>
         <option value="SSR_Draw3">SSR &ndash; Draw 3</option>
         <option value="SSR_Draw4">SSR &ndash; Draw 4</option>
         <option value="SSR_Draw5">SSR &ndash; Draw 5 (Final)</option>
+        <option value="ChangeOrder_SSR">SSR &ndash; Change Order</option>
       </select>
       <button type="button" class="btn-secondary" id="refresh-btn" style="padding:8px 14px;">Refresh</button>
     </div>
@@ -169,22 +158,18 @@ table.admin-table a:hover { text-decoration:underline; }
   </div>
 </div>
 <div class="toast" id="toast"></div>
-
 <script>
+
 const SUPABASE_URL = "https://rhtqxcznvoitxovibjso.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJodHF4Y3pudm9pdHhvdmlianNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2NzgyMjIsImV4cCI6MjEwMzI1NDIyMn0.MpBgeYbISB3Sc7UaUqVU8AzawrP16C8oNJl2TtaOz7o";
-const DRAW_FOLDERS = {
-  "Draw1": "draw1", "Draw2": "draw2", "Draw3_Final": "draw3",
-  "SSR_Draw1": "ssr1", "SSR_Draw2": "ssr2", "SSR_Draw3": "ssr3", "SSR_Draw4": "ssr4", "SSR_Draw5": "ssr5"
-};
-const DRAW_LABELS = {
-  "Draw1": "Draw 1", "Draw2": "Draw 2", "Draw3_Final": "Draw 3 (Final)",
-  "SSR_Draw1": "Draw 1", "SSR_Draw2": "Draw 2", "SSR_Draw3": "Draw 3", "SSR_Draw4": "Draw 4", "SSR_Draw5": "Draw 5 (Final)"
-};
-const DEPT_LABELS = { "NHD": "Neighborhood & Housing Development", "SSR": "Small Scale Rehab" };
+const DRAW_FOLDERS = {"Draw1": "draw1", "Draw2": "draw2", "Draw3_Final": "draw3", "SSR_Draw1": "ssr1", "SSR_Draw2": "ssr2", "SSR_Draw3": "ssr3", "SSR_Draw4": "ssr4", "SSR_Draw5": "ssr5", "ChangeOrder_NHD": "co-nhd", "ChangeOrder_SSR": "co-ssr"};
+const DRAW_LABELS = {"Draw1": "Draw 1", "Draw2": "Draw 2", "Draw3_Final": "Draw 3 (Final)", "SSR_Draw1": "Draw 1", "SSR_Draw2": "Draw 2", "SSR_Draw3": "Draw 3", "SSR_Draw4": "Draw 4", "SSR_Draw5": "Draw 5 (Final)", "ChangeOrder_NHD": "Change Order", "ChangeOrder_SSR": "Change Order"};
+const DEPT_LABELS = {"NHD": "Neighborhood & Housing Development", "SSR": "Small Scale Rehab"};
+
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
+
 (function () {
   "use strict";
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -262,6 +247,7 @@ const DEPT_LABELS = { "NHD": "Neighborhood & Housing Development", "SSR": "Small
   document.getElementById("refresh-btn").addEventListener("click", load);
   load();
 })();
+
 </script>
 </body>
 </html>

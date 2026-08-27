@@ -2,30 +2,121 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GreenWorks Draw Inspections</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Draw Inspection Forms - GreenWorks</title>
 <style>
-  :root{--green:#256834;--dkgray:#595959;--line:#c9c9c9;--bg:#f4f5f4;}
-  *{box-sizing:border-box;}
-  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:#1a1a1a;}
-  .topbar{background:#fff;padding:20px 16px;border-bottom:1px solid var(--line);text-align:center;}
-  .topbar img{height:48px;}
-  .wrap{max-width:520px;margin:0 auto;padding:20px 16px 60px;}
-  h1{font-size:18px;color:var(--green);text-align:center;margin:18px 0 4px;}
-  p.sub{text-align:center;color:var(--dkgray);font-size:13px;margin:0 0 24px;}
-  a.card, button.card{
-    display:block;width:100%;text-align:left;background:#fff;border:1px solid var(--line);border-radius:10px;
-    padding:18px 16px;margin-bottom:14px;text-decoration:none;color:inherit;font:inherit;cursor:pointer;
-  }
-  a.card:active, button.card:active{background:#f0f0f0;}
-  a.card .title, button.card .title{font-weight:700;color:var(--green);font-size:16px;}
-  a.card .desc, button.card .desc{font-size:13px;color:var(--dkgray);margin-top:4px;}
-  a.card.admin-card{background:#f4f8f5;border-color:var(--green);}
-  a.card.admin-card .title{color:var(--green);}
-  .section-label{font-size:12px;font-weight:700;color:var(--dkgray);text-transform:uppercase;letter-spacing:.04em;margin:24px 0 10px;}
-  .back-link{display:inline-block;margin-bottom:16px;color:var(--dkgray);text-decoration:none;font-size:13.5px;}
-  .step{display:none;}
-  .step.active{display:block;}
+
+
+:root{
+  --green:#256834; --dkgreen:#1b4d26; --ltgreen:#eaf3ec;
+  --dkgray:#595959; --black:#1a1a1a; --line:#c9c9c9; --bg:#f4f5f4;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:var(--bg); color:var(--black); padding-bottom:80px;
+}
+.topbar{
+  background:#fff; padding:14px 16px 10px; border-bottom:1px solid var(--line);
+  position:sticky; top:0; z-index:5;
+}
+.topbar img{height:40px; display:block;}
+.topbar h1{font-size:16px; color:var(--green); margin:6px 0 0;}
+.topbar .sub{font-size:12px; color:var(--dkgray); margin-top:2px;}
+.wrap{max-width:640px; margin:0 auto; padding:12px;}
+.card{background:#fff; border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:14px;}
+.header-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+.header-grid .full{grid-column:1/-1;}
+label.f-label{display:block; font-size:12px; font-weight:600; color:var(--dkgray); margin-bottom:3px;}
+input[type=text], input[type=date], textarea{
+  width:100%; border:1px solid var(--line); border-radius:8px; padding:9px 10px;
+  font-size:15px; font-family:inherit; background:#fff;
+}
+textarea{resize:vertical; min-height:60px;}
+textarea:disabled{background:#eee; color:#999;}
+.draw-phase{font-size:14px; font-weight:600; color:var(--black); padding:6px 0;}
+.section{margin-bottom:18px;}
+.section-title{
+  background:var(--green); color:#fff; font-weight:700; font-size:13.5px;
+  letter-spacing:.3px; padding:9px 12px; border-radius:8px 8px 0 0; text-transform:uppercase;
+}
+.section-body{border:1px solid var(--line); border-top:none; border-radius:0 0 8px 8px; padding:12px; background:#fff;}
+.desc{font-size:12.5px; color:var(--dkgray); font-style:italic; margin:0 0 10px;}
+.status-group{display:flex; flex-direction:column; gap:2px; margin-bottom:10px;}
+.status-opt{display:flex; align-items:center; gap:8px; padding:6px 2px;}
+.status-opt input[type=radio]{width:19px; height:19px; accent-color:var(--green);}
+.status-opt label{font-size:14.5px;}
+.checklist-block{background:#f7f8f7; border:1px solid var(--line); border-radius:8px; padding:6px 10px; margin-bottom:10px;}
+.checklist-item{display:flex; align-items:center; gap:8px; padding:5px 2px;}
+.checklist-item input[type=checkbox]{width:18px; height:18px; accent-color:var(--green);}
+.checklist-item label{font-size:14px;}
+.notes-block{margin-bottom:10px;}
+.notes-block .sub{font-size:11px; color:var(--dkgray); font-style:italic; display:block; margin-bottom:4px;}
+.photos-block{margin-top:8px;}
+.thumbs{display:flex; flex-wrap:wrap; gap:8px; margin:8px 0;}
+.thumb{position:relative; width:78px; height:78px; border-radius:6px; overflow:hidden; border:1px solid var(--line);}
+.thumb img{width:100%; height:100%; object-fit:cover; display:block;}
+.thumb button{
+  position:absolute; top:2px; right:2px; background:rgba(0,0,0,.6); color:#fff; border:none;
+  border-radius:50%; width:20px; height:20px; font-size:13px; line-height:1; cursor:pointer;
+}
+.add-photo-btn{
+  display:flex; align-items:center; justify-content:center; gap:6px;
+  border:2px dashed var(--line); border-radius:8px; padding:14px; color:var(--dkgray);
+  font-size:13.5px; background:#fafafa; cursor:pointer;
+}
+.add-photo-btn:active{background:#f0f0f0;}
+.sig-pad-wrap{border:1px solid var(--line); border-radius:8px; background:#fcfcfc; touch-action:none;}
+canvas.sig-pad{width:100%; height:140px; display:block; touch-action:none;}
+.sig-actions{display:flex; justify-content:flex-end; margin-top:6px;}
+.btn-small{
+  background:none; border:1px solid var(--line); border-radius:6px; padding:6px 12px;
+  font-size:12.5px; color:var(--dkgray);
+}
+.footer-bar{
+  position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid var(--line);
+  padding:10px 16px; display:flex; gap:8px; z-index:10;
+}
+.btn-primary{
+  flex:1.3; background:var(--green); color:#fff; border:none; border-radius:10px;
+  padding:13px; font-size:14.5px; font-weight:700;
+}
+.btn-primary:active{background:var(--dkgreen);}
+.btn-secondary{
+  flex:1; background:#fff; color:var(--green); border:1.5px solid var(--green); border-radius:10px;
+  padding:13px 8px; font-size:13px; font-weight:600;
+}
+.btn-ghost{
+  background:#fff; color:var(--dkgray); border:1px solid var(--line); border-radius:10px;
+  padding:13px 10px; font-size:12.5px;
+}
+.toast{
+  position:fixed; top:10px; left:50%; transform:translateX(-50%); background:#222; color:#fff;
+  padding:8px 16px; border-radius:20px; font-size:13px; z-index:20; opacity:0; transition:opacity .25s;
+  pointer-events:none; max-width:85%; text-align:center;
+}
+.toast.show{opacity:1;}
+.hint{font-size:11.5px; color:var(--dkgray); margin-top:4px;}
+.handoff-card{background:#fff8e6; border:1px solid #e8d8a0;}
+.handoff-card .f-label{color:#7a5d00;}
+.file-btn-row{display:flex; gap:8px; align-items:center;}
+
+.scope-note{
+  background:#eef5ff; border:1px solid #b9d3f5; border-left:4px solid #2a6fc9;
+  border-radius:6px; padding:8px 10px; margin:0 0 10px; font-size:12.5px; color:#17335c;
+}
+.scope-note b{color:#12294a;}
+.scope-note.missing{
+  background:#fff6ea; border-color:#e8c98a; border-left-color:#c9860f; color:#5c3d05;
+}
+.scope-note.missing b{color:#4a3103;}
+.scope-summary-card{background:#f4f8ff; border:1px solid #b9d3f5;}
+.scope-summary-card h3{margin:0 0 6px; font-size:13px; color:#17335c;}
+.scope-summary-card ul{margin:4px 0 0; padding-left:18px; font-size:12.5px; color:#17335c;}
+.scope-summary-card li{margin-bottom:3px;}
+
+
+
 </style>
 </head>
 <body>
@@ -67,6 +158,10 @@
       <div class="title">Draw 3 (Final) Inspection</div>
       <div class="desc">Full scope-of-work walkthrough, Permitting</div>
     </a>
+    <a class="card" href="/co-nhd/">
+      <div class="title">Change Order Inspection</div>
+      <div class="desc">Verify a change order is justified and reasonably priced</div>
+    </a>
   </div>
 
   <div class="step" id="step-ssr">
@@ -93,10 +188,15 @@
       <div class="title">Draw 5 (Final) Inspection</div>
       <div class="desc">Construction Complete, Appliances, Utilities, Final Inspections</div>
     </a>
+    <a class="card" href="/co-ssr/">
+      <div class="title">Change Order Inspection</div>
+      <div class="desc">Verify a change order is justified and reasonably priced</div>
+    </a>
   </div>
 
 </div>
 <script>
+
   document.addEventListener("click", function (e) {
     const btn = e.target.closest("[data-goto]");
     if (!btn) return;
@@ -104,6 +204,7 @@
     document.querySelectorAll(".step").forEach(function (s) { s.classList.remove("active"); });
     document.getElementById("step-" + btn.getAttribute("data-goto")).classList.add("active");
   });
+
 </script>
 </body>
 </html>
