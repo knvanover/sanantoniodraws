@@ -636,12 +636,12 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       else doc.setDrawColor(c[0], c[1], c[2]);
     }
 
-    function footer() {
+    function footer(pageNum) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7.5);
       setColor("text", DKGRAY);
       doc.text(FOOTER_TEXT, MARGIN, PAGE_H - 28);
-      doc.text("Page " + doc.internal.getNumberOfPages(), PAGE_W - MARGIN, PAGE_H - 28, { align: "right" });
+      doc.text("Page " + pageNum + " of " + doc.internal.getNumberOfPages(), PAGE_W - MARGIN, PAGE_H - 28, { align: "right" });
       setColor("text", BLACK);
     }
 
@@ -874,10 +874,20 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     }
 
     function notesField(label, value, subLabel, height) {
-      height = height || 46;
+      // The box grows to fit the full comment and continues onto the next
+      // page if needed, so long inspector notes are never cut off.
+      const minH = height || 46;
+      const LINE_H = 11;
+      const PAD = 7; // top + bottom padding around the text lines
+      const PAGE_BOTTOM = PAGE_H - MARGIN - 20;
       let subLines = [];
       if (subLabel) subLines = wrap(subLabel, 7.8, CONTENT_W - 60);
-      ensureSpace(height + 22);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      const lines = value ? doc.splitTextToSize(String(value), CONTENT_W - 10) : [];
+      // Start the box under its label (same spacing rule as before); any
+      // overflow continues onto the next page.
+      ensureSpace(minH + 22);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
       doc.text(label, MARGIN, y + 8);
@@ -893,20 +903,35 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         setColor("text", BLACK);
       }
       y += 14;
-      doc.setDrawColor(DKGRAY[0], DKGRAY[1], DKGRAY[2]);
-      doc.rect(MARGIN, y, CONTENT_W, height);
-      if (value) {
+      if (!lines.length) {
+        doc.setDrawColor(DKGRAY[0], DKGRAY[1], DKGRAY[2]);
+        doc.rect(MARGIN, y, CONTENT_W, minH);
+        y += minH + 10;
+        return;
+      }
+      let remaining = lines.slice();
+      let isFirstChunk = true;
+      while (remaining.length) {
+        const fit = Math.floor((PAGE_BOTTOM - y - PAD) / LINE_H);
+        if (fit < 1) { newPage(true); continue; }
+        const chunk = remaining.splice(0, fit);
+        let boxH = chunk.length * LINE_H + PAD;
+        if (isFirstChunk && !remaining.length) boxH = Math.max(boxH, minH);
+        doc.setDrawColor(DKGRAY[0], DKGRAY[1], DKGRAY[2]);
+        doc.rect(MARGIN, y, CONTENT_W, boxH);
         doc.setFont("helvetica", "normal");
         doc.setFontSize(9);
         setColor("text", BLACK);
-        const lines = doc.splitTextToSize(value, CONTENT_W - 10);
         let ty = y + 12;
-        lines.slice(0, Math.floor((height - 6) / 11)).forEach((line) => {
+        chunk.forEach((line) => {
           doc.text(line, MARGIN + 5, ty);
-          ty += 11;
+          ty += LINE_H;
         });
+        y += boxH;
+        isFirstChunk = false;
+        if (remaining.length) newPage(true);
       }
-      y += height + 10;
+      y += 10;
     }
 
     function photosBlock(photoDataUrls, label) {
@@ -1035,7 +1060,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     const total = doc.internal.getNumberOfPages();
     for (let p = 1; p <= total; p++) {
       doc.setPage(p);
-      footer();
+      footer(p);
     }
 
     return doc;
